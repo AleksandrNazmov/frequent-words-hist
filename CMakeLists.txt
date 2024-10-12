@@ -6,15 +6,19 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 
+set(PROJECT_RESOURCES
+    qml.qrc
+)
+
 set(PROJECT_SOURCES
-        main.cpp
-        qml.qrc
+    src/main.cpp
+    ${PROJECT_RESOURCES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
