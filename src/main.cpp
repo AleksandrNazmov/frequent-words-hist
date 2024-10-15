@@ -1,8 +1,14 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
+#include "q-words-counter.h"
+
+
 int main(int argc, char *argv[])
 {
+    qmlRegisterType<QWordsCounter>(
+        "WordsCounter", 1, 0, "WordsCounter");
+
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif

@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/MainWindow.qml</file>
+        <file>qml/OrientedGridLayout.qml</file>
+        <file>qml/BarChart.qml</file>
+        <file>qml/RotationFixer.qml</file>
     </qresource>
 </RCC>
