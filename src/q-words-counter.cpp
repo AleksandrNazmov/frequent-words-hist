@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <vector>
 
+#define delayForDemo() (std::this_thread::sleep_for(std::chrono::milliseconds(4)));
+
 
 using WordCount = std::pair<QString, quint64>;
 constexpr static bool cmpWordCount(
@@ -48,7 +50,6 @@ bool QWordsCounter::resumeFileProcessing() {
 bool QWordsCounter::startFileProcessing() {
     cancelFileProcessing();
     if (!mFile.isOpen()) return false;
-    // set pos pointer to beginning of file
     mFlagContinue = true;
     mFlieProcessingWorker = std::thread([this]() {
         const QRegularExpression regExpWordSplitter(
@@ -60,7 +61,7 @@ bool QWordsCounter::startFileProcessing() {
             auto words = guessedWord.split(
                 regExpWordSplitter, Qt::SplitBehaviorFlags::SkipEmptyParts);
             for (const auto& word: words) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(4));
+                delayForDemo();
                 QWriteLocker writeLocker(&mReadWriteLock);
                 ++mWordsCounter[word.toLower()];
             }
@@ -81,20 +82,12 @@ QVariant QWordsCounter::getFrequentWords(unsigned int count) {
     if (toResume) {
         resumeFileProcessing();
     }
-    // qDebug() << "Top words: "<< topWords;
     for (auto& wordCount: topWords) {
         ret.append(QWordCount());
         ret.back().setName(std::move(wordCount.first));
         ret.back().setValue(std::move(wordCount.second));
     }
     return QVariant ::fromValue(ret);
-    // return  QVariant::fromValue(QList<QWordCount>({
-    //     QWordCount(),
-    //     QWordCount(),
-    //     QWordCount(),
-    // }));
-    // return QWordCount();
-    // return  ({4,12, QWordCount(), 22});
 }
 
 QUrl QWordsCounter::fileName() {
@@ -102,13 +95,11 @@ QUrl QWordsCounter::fileName() {
 }
 
 void QWordsCounter::setFileName(QUrl fileName) {
-    // qDebug() << "File name " << fileName;
     cancelFileProcessing();
     mFile.close();
     mFile.setFileName(fileName.toLocalFile());
     using OpenFlags = QIODevice::OpenModeFlag;
     if (!mFile.open(OpenFlags::Text | OpenFlags::ReadOnly)) {
-        // qDebug() << "Can not open" << mFile.fileName();
         mFile.setFileName(QString());
     }
     setFileSize(mFile.size());
