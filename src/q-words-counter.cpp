@@ -2,6 +2,7 @@
 
 #include <QTextStream>
 #include <QRegularExpression>
+#include <QWriteLocker>
 
 #include <algorithm>
 #include <vector>
@@ -23,9 +24,9 @@ QWordsCounter::~QWordsCounter() {
 
 void QWordsCounter::cancelFileProcessing() {
     resumeFileProcessing();
-    mFlagContinue.clear();
-    if (mThread.joinable()) {
-        mThread.join();
+    mFlagContinue = false;
+    if (mFlieProcessingWorker.joinable()) {
+        mFlieProcessingWorker.join();
     }
     mWordsCounter.clear();
     mFile.reset();
@@ -33,14 +34,14 @@ void QWordsCounter::cancelFileProcessing() {
 }
 
 bool QWordsCounter::pauseFileProcessing() {
-    if (mLock || !mThread.joinable()) return false;
-    mLock = std::make_unique<std::lock_guard<std::mutex>>(mMutex);
+    if (mLocker || !mFlieProcessingWorker.joinable()) return false;
+    mLocker.reset(new QReadLocker(&mReadWriteLock));
     return true;
 }
 
 bool QWordsCounter::resumeFileProcessing() {
-    if (!mLock) return false;
-    mLock.reset();
+    if (!mLocker) return false;
+    mLocker.reset();
     return true;
 }
 
@@ -48,24 +49,24 @@ bool QWordsCounter::startFileProcessing() {
     cancelFileProcessing();
     if (!mFile.isOpen()) return false;
     // set pos pointer to beginning of file
-    mFlagContinue.test_and_set();
-    mThread = std::thread([this]() {
+    mFlagContinue = true;
+    mFlieProcessingWorker = std::thread([this]() {
         const QRegularExpression regExpWordSplitter(
             "[^" "а-яА-я" "a-zA-Z" "\\-_]");
         QString guessedWord;
         QTextStream fileStream(&mFile);
-        while (!fileStream.atEnd() && mFlagContinue.test()) {
+        while (!fileStream.atEnd() && mFlagContinue) {
             fileStream >> guessedWord;
             auto words = guessedWord.split(
                 regExpWordSplitter, Qt::SplitBehaviorFlags::SkipEmptyParts);
             for (const auto& word: words) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(2));
-                std::lock_guard lockGuard(mMutex);
+                std::this_thread::sleep_for(std::chrono::milliseconds(4));
+                QWriteLocker writeLocker(&mReadWriteLock);
                 ++mWordsCounter[word.toLower()];
             }
             setReadCount(fileStream.pos());
         }
-        mFlagContinue.clear();
+        mFlagContinue = false;
     });
     return true;
 }

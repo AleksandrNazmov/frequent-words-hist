@@ -4,12 +4,13 @@
 #include <QFile>
 #include <QUrl>
 #include <QVariant>
+#include <QScopedPointer>
+#include <QReadWriteLock>
+#include <QReadLocker>
+#include <QAtomicInteger>
 
 #include <map>
 #include <thread>
-#include <mutex>
-#include <atomic>
-
 
 
 class QWordCount {
@@ -41,17 +42,17 @@ Q_DECLARE_METATYPE(QWordCount);
 class QWordsCounter : public QObject
 {
     Q_OBJECT;
-    
-protected:
+        
+private:
     QFile mFile;
     quint64 mFileSize = 0;
     quint64 mReadCount = 0;
+    QReadWriteLock mReadWriteLock;
+    QScopedPointer<const QReadLocker> mLocker;
+    QAtomicInteger<bool> mFlagContinue;
     
-    std::thread mThread;
+    std::thread mFlieProcessingWorker;
     std::map<QString, quint64> mWordsCounter;
-    std::mutex mMutex;
-    std::atomic_flag mFlagContinue;
-    std::unique_ptr<std::lock_guard<std::mutex>> mLock;
     
 public:
     explicit QWordsCounter(QObject *parent = nullptr);
