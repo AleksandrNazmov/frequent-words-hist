@@ -73,7 +73,6 @@ bool QWordsCounter::startFileProcessing() {
 }
 
 QVariant QWordsCounter::getFrequentWords(unsigned int count) {
-    QList<QWordCount> ret;
     std::vector<WordCount> topWords;
     bool toResume = pauseFileProcessing();
     topWords.resize(qMin(static_cast<size_t>(count), mWordsCounter.size()));
@@ -82,12 +81,8 @@ QVariant QWordsCounter::getFrequentWords(unsigned int count) {
     if (toResume) {
         resumeFileProcessing();
     }
-    for (auto& wordCount: topWords) {
-        ret.append(QWordCount());
-        ret.back().setName(std::move(wordCount.first));
-        ret.back().setValue(std::move(wordCount.second));
-    }
-    return QVariant ::fromValue(ret);
+    return QVariant::fromValue(QList<QWordCount>(
+        topWords.begin(), topWords.end()));
 }
 
 QUrl QWordsCounter::fileName() {
@@ -124,19 +119,8 @@ void QWordsCounter::setFileSize(quint64 size) {
     emit progressTotalChanged();
 }
 
+QWordCount::QWordCount(const QString &name, quint64 value)
+    : mName(name), mValue(value) {}
 
-QString QWordCount::name() const {
-    return mName;
-}
-
-quint64 QWordCount::value() const {
-    return mValue;
-}
-
-void QWordCount::setName(QString name) {
-    mName = name;
-}
-
-void QWordCount::setValue(quint64 value) {
-    mValue = value;
-}
+QWordCount::QWordCount(const std::pair<QString, quint64> &pair)
+    : QWordCount(pair.first, pair.second) {}

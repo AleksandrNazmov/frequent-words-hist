@@ -20,21 +20,14 @@ protected:
     QString mName;
     quint64 mValue = 0;
     
-public:
-    QWordCount& operator=(const QWordCount& other) {
-        mName = other.mName;
-        mValue = other.mValue;
-        return *this;
-    }
-    
-    Q_PROPERTY(QString name READ name WRITE setName);
-    Q_PROPERTY(quint64 value READ value WRITE setValue);
+public:    
+    Q_PROPERTY(QString name MEMBER mName);
+    Q_PROPERTY(quint64 value MEMBER mValue);
     
 public:
-    QString name() const;
-    quint64 value() const;
-    void setName(QString name);
-    void setValue(quint64 value);
+    QWordCount() = default;
+    QWordCount(const QString& name, quint64 value);
+    QWordCount(const std::pair<QString, quint64>& pair);;
 };
 Q_DECLARE_METATYPE(QWordCount);
 
