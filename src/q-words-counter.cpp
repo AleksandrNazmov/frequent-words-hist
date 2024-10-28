@@ -3,11 +3,12 @@
 #include <QTextStream>
 #include <QRegularExpression>
 #include <QWriteLocker>
+#include <QtConcurrent/QtConcurrent>
 
 #include <algorithm>
 #include <vector>
 
-#define delayForDemo() (std::this_thread::sleep_for(std::chrono::milliseconds(4)));
+#define delayForDemo() {/*QThread::msleep(4)*/;}
 
 
 using WordCount = std::pair<QString, quint64>;
@@ -27,16 +28,15 @@ QWordsCounter::~QWordsCounter() {
 void QWordsCounter::cancelFileProcessing() {
     resumeFileProcessing();
     mFlagContinue = false;
-    if (mFlieProcessingWorker.joinable()) {
-        mFlieProcessingWorker.join();
-    }
+    mFileProcessing.waitForFinished();
     mWordsCounter.clear();
     mFile.reset();
     setReadCount(0);
 }
 
+
 bool QWordsCounter::pauseFileProcessing() {
-    if (mLocker || !mFlieProcessingWorker.joinable()) return false;
+    if (mLocker || mFileProcessing.isFinished()) return false;
     mLocker.reset(new QReadLocker(&mReadWriteLock));
     return true;
 }
@@ -51,7 +51,7 @@ bool QWordsCounter::startFileProcessing() {
     cancelFileProcessing();
     if (!mFile.isOpen()) return false;
     mFlagContinue = true;
-    mFlieProcessingWorker = std::thread([this]() {
+    mFileProcessing = QtConcurrent::run([this]() {
         const QRegularExpression regExpWordSplitter(
             "[^" "а-яА-я" "a-zA-Z" "\\-_]");
         QString guessedWord;

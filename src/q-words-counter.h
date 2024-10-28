@@ -8,9 +8,9 @@
 #include <QReadWriteLock>
 #include <QReadLocker>
 #include <QAtomicInteger>
+#include <QFuture>
 
 #include <map>
-#include <thread>
 
 
 class QWordCount {
@@ -43,8 +43,8 @@ private:
     QReadWriteLock mReadWriteLock;
     QScopedPointer<const QReadLocker> mLocker;
     QAtomicInteger<bool> mFlagContinue;
+    QFuture<void> mFileProcessing;
     
-    std::thread mFlieProcessingWorker;
     std::map<QString, quint64> mWordsCounter;
     
 public:
